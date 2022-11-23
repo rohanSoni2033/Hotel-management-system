@@ -1,26 +1,24 @@
 package controllers;
 
+import java.util.ArrayList;
 import java.sql.Connection;
 import java.sql.Statement;
-import models.User;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import models.Database;
-import java.util.ArrayList;
+import models.User;
 
 public class UserControllers {
-    Connection connection;
-    Database db = new Database();
+    private Connection connection;
 
-    public UserControllers() {
-        this.connection = db.connect();
+    public UserControllers(Connection connection) {
+        this.connection = connection;
     }
 
     private String wrapQuotesString(String str) {
         return "\"" + str + "\"";
     }
 
-    public User findUserByEmail(String email) {
+    private User findUserByEmail(String email) {
         Statement statement = null;
         ResultSet resultSet = null;
 
@@ -118,13 +116,13 @@ public class UserControllers {
         }
     }
 
-    public User getUserByUsername(String username) {
+    public User getUserById(int userId) {
         Statement statement = null;
         ResultSet resultSet = null;
 
         try {
             statement = this.connection.createStatement();
-            String queryString = "SELECT * FROM users WHERE username = " + wrapQuotesString(username);
+            String queryString = "SELECT * FROM users WHERE user_id = " + userId;
             resultSet = statement.executeQuery(queryString);
             resultSet.next();
             User user = new User(resultSet.getInt("user_id"), resultSet.getString("full_name"),
@@ -138,7 +136,7 @@ public class UserControllers {
         }
     }
 
-    public boolean deleteUserByUserId(int userId) {
+    public boolean deleteUserById(int userId) {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
