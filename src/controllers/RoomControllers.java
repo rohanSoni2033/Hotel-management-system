@@ -114,5 +114,28 @@ public class RoomControllers {
                 System.out.println("failed to close the statement " + exception.getMessage());
             }
         }
+
     }
+
+    public boolean updateAvailability(int roomId, boolean availability) {
+        Statement statement = null;
+        try {
+            statement = this.connection.createStatement();
+            String queryString = "UPDATE users SET availability=" + availability + " WHERE user_id = "
+                    + roomId;
+
+            statement.execute(queryString);
+            return true;
+        } catch (SQLException exception) {
+            System.out.println("failed to delete the data : " + exception.getMessage());
+            return false;
+        } finally {
+            try {
+                statement.close();
+            } catch (SQLException exception) {
+                System.out.println("failed to close the statement " + exception.getMessage());
+            }
+        }
+    }
+
 }
