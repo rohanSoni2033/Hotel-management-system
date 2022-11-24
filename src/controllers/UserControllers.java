@@ -1,6 +1,9 @@
 package controllers;
 
 import java.util.ArrayList;
+
+import utils.Utils;
+
 import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSet;
@@ -9,13 +12,10 @@ import models.User;
 
 public class UserControllers {
     private Connection connection;
+    private Utils utils = new Utils();
 
     public UserControllers(Connection connection) {
         this.connection = connection;
-    }
-
-    private String wrapQuotesString(String str) {
-        return "\"" + str + "\"";
     }
 
     private User findUserByEmail(String email) {
@@ -24,7 +24,7 @@ public class UserControllers {
 
         try {
             statement = this.connection.createStatement();
-            String queryString = "SELECT * FROM users WHERE email= " + wrapQuotesString(email);
+            String queryString = "SELECT * FROM users WHERE email= " + utils.wrapQuotesString(email);
 
             resultSet = statement.executeQuery(queryString);
 
@@ -62,11 +62,11 @@ public class UserControllers {
             statement = this.connection.createStatement();
             String query = "INSERT INTO users(full_name, email, mobile_number, gender, password) VALUES" +
                     "(" +
-                    wrapQuotesString(fullName) + ", " +
-                    wrapQuotesString(email) + ", " +
-                    wrapQuotesString(mobileNumber) + ", " +
-                    wrapQuotesString(gender) + ", " +
-                    wrapQuotesString(password) +
+                    utils.wrapQuotesString(fullName) + ", " +
+                    utils.wrapQuotesString(email) + ", " +
+                    utils.wrapQuotesString(mobileNumber) + ", " +
+                    utils.wrapQuotesString(gender) + ", " +
+                    utils.wrapQuotesString(password) +
                     ")";
 
             statement.execute(query);
@@ -160,7 +160,8 @@ public class UserControllers {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "UPDATE users SET full_name=" + wrapQuotesString(newFullName) + " WHERE user_id = "
+            String queryString = "UPDATE users SET full_name=" + utils.wrapQuotesString(newFullName)
+                    + " WHERE user_id = "
                     + userId;
 
             statement.execute(queryString);
@@ -181,7 +182,7 @@ public class UserControllers {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "UPDATE users SET email=" + wrapQuotesString(newEmail) + " WHERE user_id = "
+            String queryString = "UPDATE users SET email=" + utils.wrapQuotesString(newEmail) + " WHERE user_id = "
                     + userId;
 
             statement.execute(queryString);
@@ -202,7 +203,7 @@ public class UserControllers {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "UPDATE users SET mobile_number=" + wrapQuotesString(newMobileNumber)
+            String queryString = "UPDATE users SET mobile_number=" + utils.wrapQuotesString(newMobileNumber)
                     + " WHERE user_id = "
                     + userId;
 
@@ -224,7 +225,7 @@ public class UserControllers {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "UPDATE users SET gender=" + wrapQuotesString(newGender) + " WHERE user_id = "
+            String queryString = "UPDATE users SET gender=" + utils.wrapQuotesString(newGender) + " WHERE user_id = "
                     + userId;
 
             statement.execute(queryString);
@@ -240,5 +241,4 @@ public class UserControllers {
             }
         }
     }
-
 }
