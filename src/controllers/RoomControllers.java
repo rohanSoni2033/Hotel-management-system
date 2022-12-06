@@ -2,31 +2,67 @@ package controllers;
 
 import java.sql.Connection;
 import java.util.ArrayList;
-
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
 import models.Room;
 import utils.Utils;
 
+@SuppressWarnings("unused")
 public class RoomControllers {
-    private Connection connection;
-    private Utils utils = new Utils();
+    private final Connection connection;
 
     public RoomControllers(Connection connection) {
         this.connection = connection;
+        this.createRoomTable();
     }
 
-    public boolean addRoom(int roomNumber, String roomCategory, double price, String description) {
+    private Room covertResultSetToRoom(ResultSet resultSet) {
+        try {
+            return new Room(
+                    resultSet.getInt("room_number"),
+                    resultSet.getString("room_category"),
+                    resultSet.getBoolean("available"),
+                    resultSet.getDouble("price"),
+                    resultSet.getString("description"));
+        } catch (SQLException exception) {
+            System.out.println("failed to covert the result set into room object " + exception.getMessage());
+            return null;
+        }
+    }
+
+    private boolean createRoomTable() {
+        Statement statement = null;
+        try {
+            statement = this.connection.createStatement();
+            String queryString = "CREATE TABLE IF NOT EXISTS rooms(" +
+                    "room_number INT PRIMARY KEY," +
+                    "room_category VARCHAR(255) NOT NULL," +
+                    "available BOOLEAN NOT NULL DEFAULT TRUE," +
+                    "price DOUBLE NOT NULL," +
+                    "description VARCHAR(255)" +
+                    ")";
+            statement.execute(queryString);
+            return true;
+        } catch (SQLException exception) {
+            System.out.println("failed to create table" + exception.getMessage());
+            return false;
+        } finally {
+            Utils.closeStatement(statement);
+        }
+    }
+
+    public boolean createRoom(int roomNumber, String roomCategory, double price, String description) {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
             String query = "INSERT INTO rooms(room_number, room_category, price, description) VALUES" +
                     "(" +
                     roomNumber + ", " +
-                    utils.wrapQuotesString(roomCategory) + ", " +
+                    Utils.wrapQuotesString(roomCategory) + ", " +
                     price + ", " +
-                    utils.wrapQuotesString(description) +
+                    Utils.wrapQuotesString(description) +
                     ")";
 
             statement.execute(query);
@@ -35,11 +71,7 @@ public class RoomControllers {
             System.out.println("failed to insert the data into the table " + exception);
             return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeStatement(statement);
         }
     }
 
@@ -50,57 +82,67 @@ public class RoomControllers {
             statement = this.connection.createStatement();
             resultSet = statement.executeQuery("SELECT * FROM rooms");
 
-            ArrayList<Room> rooms = new ArrayList<Room>();
+            ArrayList<Room> rooms = new ArrayList<>();
 
             while (resultSet.next()) {
-                Room room = new Room(resultSet.getInt("room_id"), resultSet.getInt("room_number"),
-                        resultSet.getString("room_category"), resultSet.getDouble("price"),
-                        resultSet.getString("description"), resultSet.getBoolean("availability"));
-                rooms.add(room);
+                rooms.add(covertResultSetToRoom(resultSet));
             }
             return rooms;
         } catch (SQLException exception) {
             System.out.println("failed to get the rooms data " + exception);
             return null;
         } finally {
-            try {
-                resultSet.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the result set " + exception.getMessage());
-            }
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeResultSet(resultSet);
+            Utils.closeStatement(statement);
         }
     }
 
-    public Room getRoomById(int roomId) {
+    public ArrayList<Room> getAllAvailableRooms() {
+        Statement statement = null;
+        ResultSet resultSet = null;
+        try {
+            statement = this.connection.createStatement();
+            resultSet = statement.executeQuery("SELECT * FROM rooms WHERE available = true");
+            ArrayList<Room> rooms = new ArrayList<>();
+
+            while (resultSet.next()) {
+                rooms.add(covertResultSetToRoom(resultSet));
+            }
+            return rooms;
+        } catch (SQLException exception) {
+            System.out.println("failed to fetch the available rooms " + exception.getMessage());
+            return null;
+        } finally {
+            Utils.closeResultSet(resultSet);
+            Utils.closeStatement(statement);
+        }
+    }
+
+    public Room getRoom(int roomNumber) {
         Statement statement = null;
         ResultSet resultSet = null;
 
         try {
             statement = this.connection.createStatement();
-            String queryString = "SELECT * FROM rooms WHERE room_id = " + roomId;
+            String queryString = "SELECT * FROM rooms WHERE room_number = " + roomNumber;
             resultSet = statement.executeQuery(queryString);
             resultSet.next();
-            Room room = new Room(resultSet.getInt("room_id"), resultSet.getInt("room_number"),
-                    resultSet.getString("room_category"), resultSet.getDouble("price"),
-                    resultSet.getString("description"), resultSet.getBoolean("availability"));
 
-            return room;
+            return covertResultSetToRoom(resultSet);
         } catch (SQLException exception) {
             System.out.println("failed to get the data");
             return null;
+        } finally {
+            Utils.closeResultSet(resultSet);
+            Utils.closeStatement(statement);
         }
     }
 
-    public boolean deleteRoomById(int roomId) {
+    public boolean deleteRoom(int roomNumber) {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "DELETE FROM rooms WHERE room_id = " + roomId;
+            String queryString = "DELETE FROM rooms WHERE room_number = " + roomNumber;
 
             statement.execute(queryString);
             return true;
@@ -108,21 +150,16 @@ public class RoomControllers {
             System.out.println("failed to delete the data : " + exception.getMessage());
             return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeStatement(statement);
         }
-
     }
 
-    public boolean updateAvailability(int roomId, boolean availability) {
+    public boolean updateAvailability(int roomNumber, boolean availability) {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "UPDATE users SET availability=" + availability + " WHERE user_id = "
-                    + roomId;
+            String queryString = "UPDATE users SET availability=" + availability + " WHERE room_number = "
+                    + roomNumber;
 
             statement.execute(queryString);
             return true;
@@ -130,11 +167,7 @@ public class RoomControllers {
             System.out.println("failed to delete the data : " + exception.getMessage());
             return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeStatement(statement);
         }
     }
 
