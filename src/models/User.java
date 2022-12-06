@@ -1,28 +1,36 @@
 package models;
 
-public class User {
-    private int userId;
-    private String fullName;
-    private String email;
-    private String mobileNumber;
-    private String gender;
-    private String password;
+import java.util.Date;
 
-    public User(int userId, String fullName, String email, String mobileNumber, String gender, String password) {
-        this.userId = userId;
-        this.fullName = fullName;
+@SuppressWarnings("unused")
+public class User {
+    private final int id;
+    private final String fullname;
+    private final String email;
+    private final String mobileNumber;
+    private final String gender;
+    private final String password;
+    private final String userType;
+    private final Date createdAt;
+
+    public User(int id, String fullname, String email, String mobileNumber,
+            String gender, String password, String userType, Date createdAt) {
+        this.id = id;
+        this.fullname = fullname;
         this.email = email;
         this.mobileNumber = mobileNumber;
         this.gender = gender;
         this.password = password;
+        this.userType = userType;
+        this.createdAt = createdAt;
     }
 
-    public int getUserId() {
-        return userId;
+    public int getId() {
+        return id;
     }
 
-    public String getFullName() {
-        return fullName;
+    public String getFullname() {
+        return fullname;
     }
 
     public String getEmail() {
@@ -41,14 +49,11 @@ public class User {
         return password;
     }
 
-    public String getObjecString() {
-        return "{\n" +
-                "user id : " + this.userId + ",\n" +
-                "full name : " + this.fullName + ",\n" +
-                "email : " + this.email + ",\n" +
-                "mobile number : " + this.mobileNumber + ",\n" +
-                "gender : " + this.gender + ",\n" +
-                "}";
+    public String getUserType() {
+        return userType;
     }
 
+    public Date getCreatedAt() {
+        return createdAt;
+    }
 }
