@@ -8,58 +8,46 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
 import models.User;
 
+@SuppressWarnings("unused")
 public class UserControllers {
     private final Connection connection;
-    private final Utils utils = new Utils();
-    // when user is successfully logged in their unique user id will be stored
-    // in currentUserId
-    private int currentUserId;
+    static int currentUserId;
 
     public UserControllers(Connection connection) {
         this.connection = connection;
-        // if this application is running for the first time, there might be a chance
-        // that users table isn't exits in database then it will be created
         this.createUserTable();
     }
 
-    // following 3 function are private because it will be used only in this class
-    private boolean createUserTable() {
+    private void createUserTable() {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
             String query = "CREATE TABLE IF NOT EXISTS users(" +
-                    "user_id INT AUTO_INCREMENT PRIMARY KEY," +
-                    "full_name VARCHAR(255) NOT NULL," +
+                    "id INT AUTO_INCREMENT PRIMARY KEY," +
+                    "fullname VARCHAR(255) NOT NULL," +
                     "email VARCHAR(255) NOT NULL UNIQUE," +
                     "mobile_number VARCHAR(10) NOT NULL UNIQUE," +
                     "gender ENUM(\"male\", \"female\", \"other\") NOT NULL," +
                     "password VARCHAR(24) NOT NULL," +
-                    "user_type ENUM(\"staff\", \"admin\") DEFAULT \"staff\"," +
+                    "user_type ENUM(\"staff\", \"admin\", \"user\") DEFAULT \"user\"," +
                     "created_at DATETIME DEFAULT NOW()" +
                     ")";
             statement.execute(query);
-            return true;
         } catch (SQLException exception) {
             System.out.println("failed to create users table " + exception);
-            return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close statment " + exception.getMessage());
-            }
+            Utils.closeStatement(statement);
         }
     }
 
     private User createUserFromResultSet(ResultSet resultSet) {
         try {
-            User user = new User(resultSet.getInt("user_id"), resultSet.getString("full_name"),
+            return new User(resultSet.getInt("id"), resultSet.getString("fullname"),
                     resultSet.getString("email"), resultSet.getString("gender"), resultSet.getString("mobile_number"),
                     resultSet.getString("password"), resultSet.getString("user_type"), resultSet.getDate("created_at"));
-
-            return user;
         } catch (SQLException exception) {
             System.out.println("something went wrong" + exception);
             return null;
@@ -72,7 +60,7 @@ public class UserControllers {
         ResultSet resultSet = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "SELECT * FROM users WHERE email= " + utils.wrapQuotesString(email);
+            String queryString = "SELECT * FROM users WHERE email= " + Utils.wrapQuotesString(email);
             resultSet = statement.executeQuery(queryString);
 
             resultSet.next();
@@ -81,11 +69,8 @@ public class UserControllers {
             System.out.println("Something went wrong");
             return null;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("Something went wrong");
-            }
+            Utils.closeResultSet(resultSet);
+            Utils.closeStatement(statement);
         }
     }
 
@@ -97,8 +82,8 @@ public class UserControllers {
             return false;
         }
         if (user.getPassword().equals(password)) {
-            System.out.println("Welcome " + user.getFullName());
-            this.currentUserId = user.getUserId();
+            System.out.println("Welcome " + user.getFullname());
+            currentUserId = user.getId();
             return true;
         } else {
             System.out.println("Wrong password!!! ");
@@ -106,26 +91,20 @@ public class UserControllers {
         }
     }
 
-    // 🐸 every user can only change their own detail like fullname, email, mobile
-    // number, gender, password
-    public boolean updateFullName(String newFullName) {
+    public boolean updateFullname(String newFullname) {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "UPDATE users SET full_name=" + utils.wrapQuotesString(newFullName)
-                    + " WHERE user_id = "
-                    + this.currentUserId;
+            String queryString = "UPDATE users SET fullname=" + Utils.wrapQuotesString(newFullname)
+                    + " WHERE id = "
+                    + currentUserId;
             statement.execute(queryString);
             return true;
         } catch (SQLException exception) {
             System.out.println("failed to delete the data : " + exception.getMessage());
             return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeStatement(statement);
         }
     }
 
@@ -133,8 +112,8 @@ public class UserControllers {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "UPDATE users SET email=" + utils.wrapQuotesString(newEmail) + " WHERE user_id = "
-                    + this.currentUserId;
+            String queryString = "UPDATE users SET email = " + Utils.wrapQuotesString(newEmail) + " WHERE id = "
+                    + currentUserId;
 
             statement.execute(queryString);
             return true;
@@ -142,11 +121,7 @@ public class UserControllers {
             System.out.println("failed to delete the data : " + exception.getMessage());
             return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeStatement(statement);
         }
     }
 
@@ -154,9 +129,9 @@ public class UserControllers {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "UPDATE users SET mobile_number=" + utils.wrapQuotesString(newMobileNumber)
-                    + " WHERE user_id = "
-                    + this.currentUserId;
+            String queryString = "UPDATE users SET mobile_number = " + Utils.wrapQuotesString(newMobileNumber)
+                    + " WHERE id = "
+                    + currentUserId;
 
             statement.execute(queryString);
             return true;
@@ -164,11 +139,7 @@ public class UserControllers {
             System.out.println("failed to delete the data : " + exception.getMessage());
             return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeStatement(statement);
         }
     }
 
@@ -176,8 +147,8 @@ public class UserControllers {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "UPDATE users SET gender=" + utils.wrapQuotesString(newGender) + " WHERE user_id = "
-                    + this.currentUserId;
+            String queryString = "UPDATE users SET gender=" + Utils.wrapQuotesString(newGender) + " WHERE id = "
+                    + currentUserId;
 
             statement.execute(queryString);
             return true;
@@ -185,11 +156,7 @@ public class UserControllers {
             System.out.println("failed to delete the data : " + exception.getMessage());
             return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeStatement(statement);
         }
     }
 
@@ -198,15 +165,15 @@ public class UserControllers {
         ResultSet resultSet = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "SELECT * FROM users WHERE user_id = " + this.currentUserId;
+            String queryString = "SELECT * FROM users WHERE id = " + currentUserId;
             resultSet = statement.executeQuery(queryString);
 
             resultSet.next();
             if (resultSet.getString("password").equals(currentPassword)) {
                 try {
-                    queryString = "UPDATE users SET password=" + utils.wrapQuotesString(newPassword)
-                            + " WHERE user_id = "
-                            + this.currentUserId;
+                    queryString = "UPDATE users SET password=" + Utils.wrapQuotesString(newPassword)
+                            + " WHERE id = "
+                            + currentUserId;
 
                     statement.execute(queryString);
                     return true;
@@ -221,26 +188,23 @@ public class UserControllers {
             System.out.println("Something went wrong");
             return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("Something went wrong");
-            }
+            Utils.closeResultSet(resultSet);
+            Utils.closeStatement(statement);
         }
     }
 
-    // 🔑 only admin acces this deleteUserById function
-    public boolean createUser(String fullName, String email, String mobileNumber, String gender, String password) {
+    // 🔑 only admin access this deleteUserById function
+    public boolean createUser(String fullname, String email, String mobileNumber, String gender, String password) {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String query = "INSERT INTO users(full_name, email, mobile_number, gender, password) VALUES" +
+            String query = "INSERT INTO users(fullname, email, mobile_number, gender, password) VALUES" +
                     "(" +
-                    utils.wrapQuotesString(fullName) + ", " +
-                    utils.wrapQuotesString(email) + ", " +
-                    utils.wrapQuotesString(mobileNumber) + ", " +
-                    utils.wrapQuotesString(gender) + ", " +
-                    utils.wrapQuotesString(password) +
+                    Utils.wrapQuotesString(fullname) + ", " +
+                    Utils.wrapQuotesString(email) + ", " +
+                    Utils.wrapQuotesString(mobileNumber) + ", " +
+                    Utils.wrapQuotesString(gender) + ", " +
+                    Utils.wrapQuotesString(password) +
                     ")";
 
             statement.execute(query);
@@ -249,11 +213,7 @@ public class UserControllers {
             System.out.println("failed to insert the data into the table " + exception);
             return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeStatement(statement);
         }
     }
 
@@ -264,7 +224,7 @@ public class UserControllers {
             statement = this.connection.createStatement();
             resultSet = statement.executeQuery("SELECT * FROM users");
 
-            ArrayList<User> users = new ArrayList<User>();
+            ArrayList<User> users = new ArrayList<>();
 
             while (resultSet.next()) {
                 users.add(createUserFromResultSet(resultSet));
@@ -274,52 +234,42 @@ public class UserControllers {
             System.out.println("failed to get the users data " + exception);
             return null;
         } finally {
-            try {
-                resultSet.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the result set " + exception.getMessage());
-            }
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeResultSet(resultSet);
+            Utils.closeStatement(statement);
         }
     }
 
-    public User searchUserById(int userId) {
+    public User searchUserById(int id) {
         Statement statement = null;
         ResultSet resultSet = null;
 
         try {
             statement = this.connection.createStatement();
-            String queryString = "SELECT * FROM users WHERE user_id = " + userId;
+            String queryString = "SELECT * FROM users WHERE id = " + id;
             resultSet = statement.executeQuery(queryString);
             resultSet.next();
             return createUserFromResultSet(resultSet);
         } catch (SQLException exception) {
             System.out.println("failed to get the data");
             return null;
+        } finally {
+            Utils.closeResultSet(resultSet);
+            Utils.closeStatement(statement);
         }
     }
 
-    public boolean deleteUserById(int userId) {
+    public boolean deleteUserById(int id) {
         Statement statement = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "DELETE FROM users WHERE user_id = " + userId;
-
+            String queryString = "DELETE FROM users WHERE id = " + id;
             statement.execute(queryString);
             return true;
         } catch (SQLException exception) {
             System.out.println("failed to delete the data : " + exception.getMessage());
             return false;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("failed to close the statement " + exception.getMessage());
-            }
+            Utils.closeStatement(statement);
         }
     }
 
@@ -328,7 +278,7 @@ public class UserControllers {
         ResultSet resultSet = null;
         try {
             statement = this.connection.createStatement();
-            String queryString = "SELECT * FROM users WHERE user_id = " + this.currentUserId;
+            String queryString = "SELECT * FROM users WHERE id = " + currentUserId;
             resultSet = statement.executeQuery(queryString);
 
             resultSet.next();
@@ -337,11 +287,8 @@ public class UserControllers {
             System.out.println("Something went wrong");
             return null;
         } finally {
-            try {
-                statement.close();
-            } catch (SQLException exception) {
-                System.out.println("Something went wrong");
-            }
+            Utils.closeResultSet(resultSet);
+            Utils.closeStatement(statement);
         }
     }
 }
